@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Real-Time Chat Platform</title>
+<style>
+body{font-family:Arial;max-width:900px;margin:40px auto;padding:20px}
+input,button{padding:10px;margin:4px}
+#messages{height:350px;overflow:auto;border:1px solid #ddd;padding:10px}
+.msg{padding:7px;border-bottom:1px solid #eee}
+</style>
+</head>
+<body>
+<h1>Real-Time Chat Platform</h1>
+<p>Spring Boot + WebSockets + Kafka + Redis + PostgreSQL</p>
+<div>
+<input id="user" placeholder="username">
+<input id="pass" placeholder="password" type="password">
+<button onclick="register()">Register</button>
+<button onclick="login()">Login</button>
+</div>
+<p id="status"></p>
+<hr>
+<div>
+<input id="conv" placeholder="Conversation ID" value="1">
+<button onclick="connect()">Connect WebSocket</button>
+</div>
+<div id="messages"></div>
+<input id="text" placeholder="message" style="width:70%">
+<button onclick="sendMessage()">Send</button>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script>
+let token="", username="", stompClient=null;
+
+async function auth(path){
+ const res=await fetch('/api/auth/'+path,{method:'POST',headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({username:user.value,password:pass.value})});
+ const data=await res.text();
+ if(!res.ok){status.textContent=data;return;}
+ const x=JSON.parse(data); token=x.token; username=x.username;
+ status.textContent='Logged in as '+username;
+}
+function register(){auth('register')}
+function login(){auth('login')}
+
+function connect(){
+ if(!token){status.textContent='Login first';return;}
+ const socket=new WebSocket('ws://'+location.host+'/ws');
+ stompClient=Stomp.over(socket);
+ stompClient.connect({},()=>{
+   const id=conv.value;
+   stompClient.subscribe('/topic/conversation/'+id,msg=>{
+     const x=JSON.parse(msg.body);
+     messages.innerHTML += `<div class="msg"><b>${x.sender}</b>: ${x.content}</div>`;
+   });
+   status.textContent='Connected to conversation '+id;
+ });
+}
+function sendMessage(){
+ if(!stompClient){status.textContent='Connect first';return;}
+ stompClient.send('/app/chat/'+conv.value,{},JSON.stringify({
+   token:token,content:text.value
+ }));
+ text.value='';
+}
+</script>
+</body>
+</html>
