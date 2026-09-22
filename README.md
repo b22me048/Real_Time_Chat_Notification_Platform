@@ -56,7 +56,7 @@ Browser Client
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/<b22me048>/realtime-chat-notification-platform.git
+git clone https://github.com/b22me048/realtime-chat-notification-platform.git
 cd realtime-chat-notification-platform
 ```
 
